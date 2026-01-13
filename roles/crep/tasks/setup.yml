@@ -42,3 +42,9 @@
   pip:
     name: pymysql
     state: present
+
+- name: Install cifs-utils
+  apt:
+    name: cifs-utils
+    state: latest
+    update_cache: true
