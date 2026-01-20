@@ -24,13 +24,21 @@
         `financial_center` varchar(10) NOT NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+- name: Check `crep` primary key
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TABLE_NAME = 'crep' AND CONSTRAINT_TYPE = 'PRIMARY KEY';
+  register: crep_pk
+
 - name: Alter table `crep` add primary key
   community.mysql.mysql_query:
     login_db: "{{ keybase_secrets.mysql.database }}"
     login_user: "{{ keybase_secrets.mysql.user }}"
     login_password: "{{ keybase_secrets.mysql.password }}"
     query: ALTER TABLE `crep` ADD PRIMARY KEY (`id`);
-  ignore_errors: true # Will fail if already done, so we can ignore the error
+  when: crep_pk.query_result[0][0].cnt | int == 0
 
 - name: Alter table `crep` modify not null auto increment
   community.mysql.mysql_query:
@@ -39,3 +47,137 @@
     login_password: "{{ keybase_secrets.mysql.password }}"
     query: ALTER TABLE `crep` MODIFY `id` int NOT NULL AUTO_INCREMENT;
   ignore_errors: true
+
+
+- name: Create `crep_log` table if not exists
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: CREATE TABLE IF NOT EXISTS `crep_log` (
+      `id` int NOT NULL,
+      `action` varchar(8) NOT NULL,
+      `date_time` datetime NOT NULL,
+      `crep_id` int NOT NULL,
+      `exam_name` varchar(128) NOT NULL,
+      `delivery_date` datetime NOT NULL,
+      `exam_date` datetime NOT NULL,
+      `contact` varchar(256) NOT NULL,
+      `exam_code` varchar(24) NOT NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+- name: Check `crep_log` primary key
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TABLE_NAME = 'crep_log' AND CONSTRAINT_TYPE = 'PRIMARY KEY';
+  register: crep_log_pk
+
+- name: Alter table `crep_log` add primary key
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: ALTER TABLE `crep_log` ADD PRIMARY KEY (`id`);
+  when: crep_log_pk.query_result[0][0].cnt | int == 0
+
+- name: Alter table `crep_log` modify not null auto increment
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: ALTER TABLE `crep_log` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  ignore_errors: true
+
+
+- name: Create `user_notification` table if not exists
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: CREATE TABLE IF NOT EXISTS `user_notification` (
+      `log_id` int NOT NULL,
+      `sciper` varchar(6) NOT NULL,
+      `read_at` datetime(6) DEFAULT NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+- name: Check `user_notification` primary key
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TABLE_NAME = 'user_notification' AND CONSTRAINT_TYPE = 'PRIMARY KEY';
+  register: user_notification_pk
+
+- name: Alter table `user_notification` add primary key
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: ALTER TABLE `user_notification` ADD PRIMARY KEY (`log_id`, `sciper`), ADD KEY `idx_user_unread` (`sciper`, `read_at`, `log_id`);
+  when: user_notification_pk.query_result[0][0].cnt | int == 0
+
+- name: Check `user_notification` foreign key `fk_un_log`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TABLE_NAME = 'user_notification' AND CONSTRAINT_NAME = 'fk_un_log';
+  register: user_notification_fk
+
+- name: Alter table `user_notification` add foreign key
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: ALTER TABLE `user_notification` ADD CONSTRAINT `fk_un_log` FOREIGN KEY (`log_id`) REFERENCES `crep_log` (`id`) ON DELETE CASCADE;
+  when: user_notification_fk.query_result[0][0].cnt | int == 0
+
+- name: Check trigger `crep_after_insert`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TRIGGER_NAME = 'crep_after_insert';
+  register: crep_after_insert
+
+- name: Create trigger `crep_after_insert` AFTER INSERT ON `crep`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: CREATE TRIGGER `crep_after_insert` AFTER INSERT ON `crep` FOR EACH ROW INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code) VALUES ('insert', NOW(), NEW.id, NEW.exam_name, NEW.print_date, NEW.exam_date, NEW.contact, NEW.exam_code);
+  when: crep_after_insert.query_result[0][0].cnt | int == 0
+  
+- name: Check trigger `crep_after_update`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TRIGGER_NAME = 'crep_after_update';
+  register: crep_after_update
+
+- name: Create trigger `crep_after_update` AFTER UPDATE ON `crep`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: CREATE TRIGGER `crep_after_update` AFTER UPDATE ON `crep` FOR EACH ROW INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code) VALUES ('update', NOW(), NEW.id, NEW.exam_name, NEW.print_date, NEW.exam_date, NEW.contact, NEW.exam_code);
+  when: crep_after_update.query_result[0][0].cnt | int == 0
+  
+- name: Check trigger `crep_after_delete`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TRIGGER_NAME = 'crep_after_delete';
+  register: crep_after_delete
+
+- name: Create trigger `crep_after_delete` AFTER DELETE ON `crep`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: CREATE TRIGGER `crep_after_delete` AFTER DELETE ON `crep` FOR EACH ROW INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code) VALUES ('delete', NOW(), OLD.id, OLD.exam_name, OLD.print_date, OLD.exam_date, OLD.contact, OLD.exam_code);
+  when: crep_after_delete.query_result[0][0].cnt | int == 0
