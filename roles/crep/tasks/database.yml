@@ -21,7 +21,8 @@
         `authorized_persons` MEDIUMTEXT NOT NULL,
         `registered_by` varchar(256) NOT NULL,
         `need_scan` BOOLEAN NOT NULL,
-        `financial_center` varchar(10) NOT NULL
+        `financial_center` varchar(10) NOT NULL,
+        `files` MEDIUMTEXT NOT NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 - name: Alter table `crep` add primary key
