@@ -1,3 +1,14 @@
+- name: Allow some of CePro members SSH access
+  become: true
+  ansible.posix.authorized_key:
+    user: root
+    state: present
+    key: "https://github.com/{{ item }}.keys"
+  with_items:
+    - azecko
+    - kedrox
+    - thegoldenkiwi2
+
 - name: Install Docker
   apt:
     name: docker.io
