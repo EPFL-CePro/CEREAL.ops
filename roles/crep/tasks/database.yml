@@ -1,4 +1,31 @@
 ---
+- name: Create Docker network
+  ansible.builtin.docker_network:
+    name: crep-network
+
+- name: Create MySQL Docker container
+  ansible.builtin.docker_container:
+    name: crep-app-db
+    image: mysql
+    state: started
+    restart_policy: unless-stopped
+    env_file: /var/www/html/crep/.env
+    published_ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - "./db:/docker-entrypoint-initdb.d"
+    networks:
+      - name: crep-network
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -h
+        - localhost
+      timeout: 5s
+      retries: 10
+
 - name: Create `crep` table if not exists
   community.mysql.mysql_query:
     login_db: "{{ keybase_secrets.mysql.database }}"
