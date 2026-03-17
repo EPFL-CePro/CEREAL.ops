@@ -59,3 +59,9 @@
     name: cifs-utils
     state: latest
     update_cache: true
+
+- name: Install apache2
+  apt:
+    name: apache2
+    state: latest
+    update_cache: true
