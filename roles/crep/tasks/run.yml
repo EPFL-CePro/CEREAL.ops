@@ -1,15 +1,3 @@
-- name: Ensure that CREP repository is present and up to date
-  git:
-    repo: 'https://github.com/epfl-cepro/crep'
-    dest: /var/www/html/crep
-    version: "main"
-    force: yes
-
-- name: "Copy env secrets from keybase ({{ inventory_mode }})"
-  copy:
-    src: "/keybase/team/cepro_crep/secrets-{{ inventory_mode }}.env"
-    dest: /var/www/html/crep/.env
-
 - name: Ensure /etc/samba directory exists
   file: 
     path: "/etc/samba/"
@@ -20,16 +8,16 @@
     src: "/keybase/team/cepro_crep/cifs_creds"
     dest: /etc/samba/creds_crep_printing
 
-- name: "Ensure repro_exam_printing mounting directory exists"
+- name: "Ensure CREP_PRINTING mounting directory exists"
   file: 
-    path: "/mnt/repro_exam_printing"
+    path: "/mnt/CREP_PRINTING"
     state: directory
 
-# Mounting SMB to /mnt/repro_exam_printing, also putting this configuration into /etc/fstab so that it automatically mounts on restart.
-- name: "Mount repro_exam_printing SMB share"
+# Mounting SMB to /mnt/CREP_PRINTING, also putting this configuration into /etc/fstab so that it automatically mounts on restart.
+- name: "Mount CREP_PRINTING SMB share"
   ansible.posix.mount:
-    path: /mnt/repro_exam_printing
-    src: //vpsi1files.epfl.ch/repro_exam_printing
+    path: /mnt/CREP_PRINTING
+    src: //vpsi1files.epfl.ch/CAPE/TEST_CREP_EXAM
     fstype: cifs
     opts: credentials=/etc/samba/creds_crep_printing,iocharset=utf8,vers=3.0,_netdev
     state: mounted
@@ -44,7 +32,7 @@
     source: build
     force_source: yes
     build:
-      path: /var/www/html/crep
+      path: /data/crep
 
 - name: Create Docker CREP
   ansible.builtin.docker_container:
@@ -58,8 +46,8 @@
         aliases:
           - nextjs
     env:
-      NODE_ENV: production
-    env_file: /var/www/html/crep/.env
-    # /mnt/repro_exam_printing is mounted inside the container, also with the path /mnt/repro_exam_printing
+      NODE_ENV: "{{ 'production' if inventory_environment == 'prod' else 'test' }}"
+    env_file: /data/crep/.env
+    # /mnt/CREP_PRINTING is mounted inside the container, also with the path /mnt/CREP_PRINTING
     volumes:
-      - /mnt/repro_exam_printing:/mnt/repro_exam_printing:rw
+      - /mnt/CREP_PRINTING:/mnt/CREP_PRINTING:rw

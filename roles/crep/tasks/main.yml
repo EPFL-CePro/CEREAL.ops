@@ -6,6 +6,13 @@
   tags: always
 
 - include_tasks:
+    file: repository.yml
+    apply:
+      tags:
+        - crep.repository
+  tags: always
+
+- include_tasks:
     file: database.yml
     apply:
       tags:

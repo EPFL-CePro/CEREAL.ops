@@ -9,7 +9,7 @@
     image: mysql
     state: started
     restart_policy: unless-stopped
-    env_file: /var/www/html/crep/.env
+    env_file: /data/crep/.env
     published_ports:
       - "127.0.0.1:3306:3306"
     volumes:

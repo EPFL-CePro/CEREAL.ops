@@ -40,8 +40,10 @@
     update_cache: true
 
 - name: Install Docker Python package
-  ansible.builtin.pip:
-    name: docker
+  apt:
+    name: python3-docker
+    state: latest
+    update_cache: true
 
 - name: Install Git
   apt:
@@ -50,9 +52,10 @@
     update_cache: true
 
 - name: Install pymysql
-  pip:
-    name: pymysql
-    state: present
+  apt:
+    name: python3-pymysql
+    state: latest
+    update_cache: true
 
 - name: Install cifs-utils
   apt:

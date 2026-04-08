@@ -34,7 +34,7 @@ fatal () {
 platform_check () {
     if ! test -f ansible-deps-cache/.versions 2>/dev/null; then
       curl https://raw.githubusercontent.com/epfl-si/ansible.suitcase/master/install.sh | \
-            SUITCASE_ANSIBLE_VERSION=6.3.0 \
+            SUITCASE_ANSIBLE_VERSION=10.1.0 \
             SUITCASE_DIR=$PWD/ansible-deps-cache \
             SUITCASE_ANSIBLE_REQUIREMENTS=requirements.yml \
             SUITCASE_NO_EYAML=1 \

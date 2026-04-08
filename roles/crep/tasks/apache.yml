@@ -1,11 +1,12 @@
-- name: Enable required Apache proxy modules
-  ansible.builtin.shell: |
-    a2enmod proxy
-    a2enmod proxy_http
-    a2enmod headers
-    a2enmod rewrite
-  args:
-    warn: false
+- name: Enable required Apache modules
+  ansible.builtin.command: "a2enmod {{ item }}"
+  loop:
+    - proxy
+    - proxy_http
+    - headers
+    - rewrite
+    - ssl
+  changed_when: false
 
 - name: Ensure Apache certs repository exists
   file:
@@ -36,9 +37,28 @@
     group: root
     mode: '0644'
 
-- name: Enable CREP site and reload Apache
-  ansible.builtin.shell: |
-    systemctl reload apache2
-    a2ensite crep.conf
-  args:
-    warn: false
+- name: Disable default Apache sites
+  ansible.builtin.command: "a2dissite {{ item }}"
+  loop:
+    - 000-default.conf
+    - default-ssl.conf
+  failed_when: false
+  changed_when: false
+
+- name: Enable CREP site
+  ansible.builtin.command: a2ensite crep.conf
+  changed_when: false
+
+- name: Validate Apache configuration
+  ansible.builtin.command: apache2ctl configtest
+
+- name: Ensure Apache is enabled and running
+  ansible.builtin.service:
+    name: apache2
+    state: started
+    enabled: true
+
+- name: Reload Apache
+  ansible.builtin.service:
+    name: apache2
+    state: reloaded
