@@ -49,7 +49,8 @@
         `registered_by` varchar(256) NOT NULL,
         `need_scan` BOOLEAN NOT NULL,
         `financial_center` varchar(10) NOT NULL,
-        `files` MEDIUMTEXT NOT NULL
+        `files` MEDIUMTEXT NOT NULL,
+        `desired_date` date NOT NULL,
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 - name: Check `crep` primary key
