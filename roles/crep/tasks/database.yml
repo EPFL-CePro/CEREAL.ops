@@ -44,7 +44,7 @@
         `exam_date` date NOT NULL,
         `paper_format` varchar(2) NOT NULL,
         `paper_color` varchar(10) NOT NULL,
-        `contact` varchar(256) NOT NULL,
+        `contact` MEDIUMTEXT NOT NULL,
         `authorized_persons` MEDIUMTEXT NOT NULL,
         `registered_by` varchar(256) NOT NULL,
         `need_scan` BOOLEAN NOT NULL,
