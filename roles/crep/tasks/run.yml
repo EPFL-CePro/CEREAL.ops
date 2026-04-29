@@ -17,7 +17,7 @@
 - name: "Mount CREP_PRINTING SMB share"
   ansible.posix.mount:
     path: /mnt/CREP_PRINTING
-    src: //vpsi1files.epfl.ch/CAPE/TEST_CREP_EXAM
+    src: "{{ '//vpsi1files.epfl.ch/CAPE/TEST_CREP_EXAM' if inventory_environment == 'test' else '//vpsi1files.epfl.ch/repro_exam_printing' }}"
     fstype: cifs
     opts: credentials=/etc/samba/creds_crep_printing,iocharset=utf8,vers=3.0,_netdev
     state: mounted
