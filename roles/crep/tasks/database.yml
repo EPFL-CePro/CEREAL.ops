@@ -210,3 +210,10 @@
     login_password: "{{ keybase_secrets.mysql.password }}"
     query: CREATE TRIGGER `crep_after_delete` AFTER DELETE ON `crep` FOR EACH ROW INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code) VALUES ('delete', NOW(), OLD.id, OLD.exam_name, OLD.print_date, OLD.exam_date, OLD.contact, OLD.exam_code);
   when: crep_after_delete.query_result[0][0].cnt | int == 0
+
+- name: "Launch backup crontab script"
+  ansible.builtin.cron:
+    name: "configurate mysql backup crontab"
+    minute: "0"
+    hour: "0"
+    job: "/data/crep/database_backup.sh >> /var/log/mysql_backup.log 2>&1"
