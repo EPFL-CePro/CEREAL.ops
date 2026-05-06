@@ -50,7 +50,8 @@
         `need_scan` BOOLEAN NOT NULL,
         `financial_center` varchar(10) NOT NULL,
         `files` MEDIUMTEXT NOT NULL,
-        `desired_date` date NOT NULL
+        `desired_date` date NOT NULL,
+        `print` varchar(16) NOT NULL DEFAULT 'recto-verso'
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 - name: Check `crep` primary key
