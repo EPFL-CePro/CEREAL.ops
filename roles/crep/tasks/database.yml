@@ -53,7 +53,8 @@
         `desired_date` date NOT NULL,
         `print` varchar(16) NOT NULL DEFAULT 'recto-verso',
         `boxes` int NOT NULL,
-        `price_unit` int NOT NULL
+        `price_unit` int NOT NULL,
+        `price_total` int NOT NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 - name: Check `crep` primary key
