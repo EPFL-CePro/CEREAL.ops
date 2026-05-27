@@ -1,6 +1,6 @@
 - name: Ensure that CEREAL repository is present and up to date
   git:
-    repo: 'https://github.com/epfl-cepro/crep'
+    repo: 'https://github.com/epfl-cepro/cereal'
     dest: /data/cereal
     version: "main"
     force: yes
