@@ -1,4 +1,4 @@
 all:
   hosts:
-    crep-test:
+    cereal-test:
       inventory_environment: test

@@ -1,4 +1,4 @@
 all:
   hosts:
-    crep:
+    cereal:
       inventory_environment: prod

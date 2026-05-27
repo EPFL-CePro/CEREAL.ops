@@ -4,7 +4,7 @@
 #
 # Usage ("ansible-playbook" mode):
 #
-#   ./ansible/crepsible
+#   ./ansible/cerealsible
 #
 # If you are unfamiliar with Ansible, read up on it at
 # - https://www.ansible.com/overview/how-ansible-works

@@ -2,33 +2,33 @@
     file: setup.yml
     apply:
       tags:
-        - crep.setup
+        - cereal.setup
   tags: always
 
 - include_tasks:
     file: repository.yml
     apply:
       tags:
-        - crep.repository
+        - cereal.repository
   tags: always
 
 - include_tasks:
     file: database.yml
     apply:
       tags:
-        - crep.database
+        - cereal.database
   tags: always
 
 - include_tasks:
     file: run.yml
     apply:
       tags:
-        - crep.run
+        - cereal.run
   tags: always
 
 - include_tasks:
     file: apache.yml
     apply:
       tags:
-        - crep.apache
+        - cereal.apache
   tags: always

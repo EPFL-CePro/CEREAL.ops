@@ -1,21 +1,21 @@
 ---
 - name: Create Docker network
   ansible.builtin.docker_network:
-    name: crep-network
+    name: cereal-network
 
 - name: Create MySQL Docker container
   ansible.builtin.docker_container:
-    name: crep-app-db
+    name: cereal-app-db
     image: mysql
     state: started
     restart_policy: unless-stopped
-    env_file: /data/crep/.env
+    env_file: /data/cereal/.env
     published_ports:
       - "127.0.0.1:3306:3306"
     volumes:
       - "./db:/docker-entrypoint-initdb.d"
     networks:
-      - name: crep-network
+      - name: cereal-network
     healthcheck:
       test:
         - CMD
@@ -215,9 +215,9 @@
     query: CREATE TRIGGER `crep_after_delete` AFTER DELETE ON `crep` FOR EACH ROW INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code) VALUES ('delete', NOW(), OLD.id, OLD.exam_name, OLD.print_date, OLD.exam_date, OLD.contact, OLD.exam_code);
   when: crep_after_delete.query_result[0][0].cnt | int == 0
 
-- name: Ensure /data/crep-backups directory exists
+- name: Ensure /data/cereal-backups directory exists
   file: 
-    path: /data/crep-backups
+    path: /data/cereal-backups
     state: directory
 
 - name: Ensure /etc/samba directory exists
@@ -227,15 +227,15 @@
 
 - name: "Copy cifs credentials from keybase ({{ inventory_mode }})"
   copy:
-    src: "/keybase/team/cepro_crep/cifs_creds"
-    dest: /etc/samba/creds_crep_printing
+    src: "/keybase/team/cepro_cereal/cifs_creds"
+    dest: /etc/samba/creds_cereal_printing
 
 - name: Mount NAS-backup SMB share
   ansible.posix.mount:
-    path: /data/crep-backups
-    src: "{{ '//vpsi1files.epfl.ch/CEPRO/BACKUP/CREP_TEST' if inventory_environment == 'test' else '//vpsi1files.epfl.ch/CEPRO/BACKUP/CREP' }}"
+    path: /data/cereal-backups
+    src: "{{ '//vpsi1files.epfl.ch/CEPRO/BACKUP/CEREAL_TEST' if inventory_environment == 'test' else '//vpsi1files.epfl.ch/CEPRO/BACKUP/CEREAL' }}"
     fstype: cifs
-    opts: credentials=/etc/samba/creds_crep_printing,iocharset=utf8,vers=3.0,_netdev
+    opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
     state: mounted
 
 - name: "Launch backup crontab script"
