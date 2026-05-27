@@ -1,0 +1,11 @@
+- name: Ensure that CEREAL repository is present and up to date
+  git:
+    repo: 'https://github.com/epfl-cepro/crep'
+    dest: /data/cereal
+    version: "main"
+    force: yes
+
+- name: "Copy env secrets from keybase ({{ inventory_mode }})"
+  copy:
+    src: "/keybase/team/cepro_cereal/secrets-{{ inventory_mode }}.env"
+    dest: /data/cereal/.env

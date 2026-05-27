@@ -16,23 +16,23 @@
   with_items:
    - /etc/ssl/
    - /etc/ssl/certs/
-   - /etc/ssl/certs/crep/
+   - /etc/ssl/certs/cereal/
 
-- name: Copy certs to /etc/ssl/certs/crep from Keybase
+- name: Copy certs to /etc/ssl/certs/cereal from Keybase
   copy:
     src: "{{ item }}"
-    dest: /etc/ssl/certs/crep/
+    dest: /etc/ssl/certs/cereal/
     owner: root
     mode: 600
   with_fileglob:
-    - "/keybase/team/cepro_crep/crep-serveur.key"
-    - "/keybase/team/cepro_crep/DigiCertCA.crt"
-    - "/keybase/team/cepro_crep/crep_epfl_ch-crt.pem"
+    - "/keybase/team/cepro_cereal/cereal-serveur.key"
+    - "/keybase/team/cepro_cereal/DigiCertCA.crt"
+    - "/keybase/team/cepro_cereal/cereal_epfl_ch-crt.pem"
 
 - name: Create Apache virtual host configuration
   ansible.builtin.template:
-    src: crep.conf.j2
-    dest: /etc/apache2/sites-available/crep.conf
+    src: cereal.conf.j2
+    dest: /etc/apache2/sites-available/cereal.conf
     owner: root
     group: root
     mode: '0644'
@@ -45,8 +45,8 @@
   failed_when: false
   changed_when: false
 
-- name: Enable CREP site
-  ansible.builtin.command: a2ensite crep.conf
+- name: Enable CEREAL site
+  ansible.builtin.command: a2ensite cereal.conf
   changed_when: false
 
 - name: Validate Apache configuration

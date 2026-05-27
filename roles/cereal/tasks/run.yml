@@ -5,8 +5,8 @@
 
 - name: "Copy cifs credentials from keybase ({{ inventory_mode }})"
   copy:
-    src: "/keybase/team/cepro_crep/cifs_creds"
-    dest: /etc/samba/creds_crep_printing
+    src: "/keybase/team/cepro_cereal/cifs_creds"
+    dest: /etc/samba/creds_cereal_printing
 
 - name: "Ensure CREP_PRINTING mounting directory exists"
   file: 
@@ -19,36 +19,36 @@
     path: /mnt/CREP_PRINTING
     src: "{{ '//vpsi1files.epfl.ch/CAPE/TEST_CREP_EXAM' if inventory_environment == 'test' else '//vpsi1files.epfl.ch/repro_exam_printing' }}"
     fstype: cifs
-    opts: credentials=/etc/samba/creds_crep_printing,iocharset=utf8,vers=3.0,_netdev
+    opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
     state: mounted
 
 - name: Create Docker network
   ansible.builtin.docker_network:
-    name: crep-network
+    name: cereal-network
 
-- name: Build CREP image
+- name: Build CEREAL image
   community.docker.docker_image:
-    name: crep
+    name: cereal
     source: build
     force_source: yes
     build:
-      path: /data/crep
+      path: /data/cereal
 
-- name: Create Docker CREP
+- name: Create Docker CEREAL
   ansible.builtin.docker_container:
-    name: crep-app
-    image: crep
+    name: cereal-app
+    image: cereal
     state: started
     ports:
       - "3000:3000"
     networks:
-      - name: crep-network
+      - name: cereal-network
         aliases:
           - nextjs
     env:
       NODE_ENV: production
       CREP_ENV: "{{ inventory_environment }}"
-    env_file: /data/crep/.env
+    env_file: /data/cereal/.env
     # /mnt/CREP_PRINTING is mounted inside the container, also with the path /mnt/CREP_PRINTING
     volumes:
       - /mnt/CREP_PRINTING:/mnt/CREP_PRINTING:rw

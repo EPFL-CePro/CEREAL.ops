@@ -1,5 +1,5 @@
-- name: Deploy CREP
+- name: Deploy CEREAL
   hosts: all
   gather_facts: no
   roles:
-    - role: roles/crep
+    - role: roles/cereal

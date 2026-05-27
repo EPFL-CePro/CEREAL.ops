@@ -1,7 +1,0 @@
-_keybase_secrets: 
-  prod: "{{ lookup('file', '/keybase/team/cepro_crep/secrets-prod.yml') | from_yaml }}"
-  test: "{{ lookup('file', '/keybase/team/cepro_crep/secrets-test.yml') | from_yaml }}"
-
-keybase_secrets: "{{ _keybase_secrets.get(inventory_environment, None) }}"
-
-crep_host_subdomain: "{{ 'crep.epfl.ch' if 'prod' in inventory_file else 'crep-test.epfl.ch' }}"
