@@ -5,6 +5,10 @@
 
     # Redirection HTTP -> HTTPS
     RewriteEngine On
+    RewriteCond %{HTTP_HOST} ={{ crep_redirect_host_subdomain }}
+    RewriteRule ^/?$ https://{{ cereal_host_subdomain }}/crep [R=301,L]
+    RewriteCond %{HTTP_HOST} ={{ crep_redirect_host_subdomain }}
+    RewriteRule ^ https://{{ cereal_host_subdomain }}%{REQUEST_URI} [R=301,L]
     RewriteCond %{HTTPS} !=on
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 </VirtualHost>
@@ -20,7 +24,9 @@
 
     RewriteEngine On
     RewriteCond %{HTTP_HOST} ={{ crep_redirect_host_subdomain }}
-    RewriteRule ^/?$ /crep [R=302,L]
+    RewriteRule ^/?$ https://{{ cereal_host_subdomain }}/crep [R=301,L]
+    RewriteCond %{HTTP_HOST} ={{ crep_redirect_host_subdomain }}
+    RewriteRule ^ https://{{ cereal_host_subdomain }}%{REQUEST_URI} [R=301,L]
 
     ProxyPreserveHost On
     ProxyPass / http://127.0.0.1:3000/
