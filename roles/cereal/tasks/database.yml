@@ -243,4 +243,4 @@
     name: "configurate mysql backup crontab"
     minute: "0"
     hour: "0"
-    job: "/data/crep/database_backup.sh >> /var/log/mysql_backup.log 2>&1"
+    job: "/data/cereal/database_backup.sh >> /var/log/mysql_backup.log 2>&1"
