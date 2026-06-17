@@ -33,7 +33,7 @@
     login_password: "{{ keybase_secrets.mysql.password }}"
     query: CREATE TABLE IF NOT EXISTS `crep` (
         `id` int NOT NULL,
-        `exam_name` varchar(128) NOT NULL,
+        `exam_name` varchar(256) NOT NULL,
         `exam_code` varchar(24) NOT NULL,
         `exam_pages` int NOT NULL,
         `exam_students` int NOT NULL,
@@ -93,7 +93,7 @@
       `action` varchar(8) NOT NULL,
       `date_time` datetime NOT NULL,
       `crep_id` int NOT NULL,
-      `exam_name` varchar(128) NOT NULL,
+      `exam_name` varchar(256) NOT NULL,
       `delivery_date` datetime NOT NULL,
       `exam_date` datetime NOT NULL,
       `contact` varchar(256) NOT NULL,
