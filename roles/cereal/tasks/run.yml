@@ -13,6 +13,11 @@
     path: "/mnt/CREP_PRINTING"
     state: directory
 
+- name: "Ensure SCAN_EXAMS mounting directory exists"
+  file: 
+    path: "/mnt/SCAN_EXAMS"
+    state: directory
+
 # Mounting SMB to /mnt/CREP_PRINTING, also putting this configuration into /etc/fstab so that it automatically mounts on restart.
 - name: "Mount CREP_PRINTING SMB share"
   ansible.posix.mount:
@@ -21,6 +26,22 @@
     fstype: cifs
     opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
     state: mounted
+
+# Mounting SMB to /mnt/SCAN_EXAMS, also putting this configuration into /etc/fstab so that it automatically mounts on restart.
+- name: "Mount SCAN_EXAMS SMB share"
+  ansible.posix.mount:
+    path: /mnt/SCAN_EXAMS
+    src: "//vpsi1files.epfl.ch/CAPE/SCAN_EXAMS"
+    fstype: cifs
+    opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
+    state: mounted
+
+- name: "Launch scans monitor crontab script"
+  ansible.builtin.cron:
+    name: "configurate scans folder monitor crontab"
+    minute: "*/5"
+    job: "node /data/cereal/scans_monitor.js"
+  when: inventory_environment == 'prod'
 
 - name: Create Docker network
   ansible.builtin.docker_network:
