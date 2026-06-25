@@ -67,6 +67,25 @@
         `scans` JSON NOT NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+- name: Create `email_template` table if not exists
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: CREATE TABLE IF NOT EXISTS `email_template` (
+        `id` int NOT NULL AUTO_INCREMENT,
+        `template_key` varchar(64) NOT NULL,
+        `section` varchar(45) NOT NULL,
+        `name` varchar(100) NOT NULL,
+        `subject` text,
+        `body` text,
+        `recipients_to` text,
+        `recipients_cc` text,
+        `reply_to` text,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `template_key_UNIQUE` (`template_key`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 - name: Check `crep` primary key
   community.mysql.mysql_query:
     login_db: "{{ keybase_secrets.mysql.database }}"
