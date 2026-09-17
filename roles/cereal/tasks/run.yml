@@ -18,11 +18,25 @@
     path: "/mnt/SCAN_EXAMS"
     state: directory
 
+- name: "Ensure EXAM-DIFF mounting directory exists"
+  file: 
+    path: "/mnt/EXAM-DIFF"
+    state: directory
+
 # Mounting SMB to /mnt/CREP_PRINTING, also putting this configuration into /etc/fstab so that it automatically mounts on restart.
 - name: "Mount CREP_PRINTING SMB share"
   ansible.posix.mount:
     path: /mnt/CREP_PRINTING
     src: "{{ '//vpsi1files.epfl.ch/CAPE/TEST_CREP_EXAM' if inventory_environment == 'test' else '//vpsi1files.epfl.ch/repro_exam_printing' }}"
+    fstype: cifs
+    opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
+    state: mounted
+
+# Mounting SMB to /mnt/EXAM-DIFF, also putting this configuration into /etc/fstab so that it automatically mounts on restart.
+- name: "Mount EXAM-DIFF SMB share"
+  ansible.posix.mount:
+    path: /mnt/EXAM-DIFF
+    src: "{{ '//vpsi1files.epfl.ch/cepro_exdiff_dev' if inventory_environment == 'test' else '//vpsi1files.epfl.ch/cepro_exdiff' }}"
     fstype: cifs
     opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
     state: mounted
@@ -73,3 +87,4 @@
     # /mnt/CREP_PRINTING is mounted inside the container, also with the path /mnt/CREP_PRINTING
     volumes:
       - /mnt/CREP_PRINTING:/mnt/CREP_PRINTING:rw
+      - /mnt/EXAM-DIFF/:/mnt/EXAM-DIFF:rw
