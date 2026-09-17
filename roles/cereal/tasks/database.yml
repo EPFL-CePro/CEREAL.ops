@@ -140,7 +140,9 @@
         `exam_code` varchar(25) NOT NULL,
         `exam_name` varchar(256) NOT NULL,
         `exam_date` date NOT NULL,
-        `isa_has_grade` tinyint(1) NOT NULL
+        `isa_has_grade` tinyint(1) NOT NULL,
+        `sac_has_accepted` BOOLEAN NULL DEFAULT NULL,
+        `sac_remark` varchar(500) NULL DEFAULT NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 - name: Check `deferred_exam_registration` primary key
