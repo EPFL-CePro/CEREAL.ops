@@ -84,7 +84,6 @@
       NODE_ENV: production
       CEREAL_ENV: "{{ inventory_environment }}"
     env_file: /data/cereal/.env
-    # /mnt/CREP_PRINTING is mounted inside the container, also with the path /mnt/CREP_PRINTING
     volumes:
       - /mnt/CREP_PRINTING:/mnt/CREP_PRINTING:rw
       - /mnt/EXAM-DIFF/:/mnt/EXAM-DIFF:rw
