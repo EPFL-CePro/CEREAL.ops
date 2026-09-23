@@ -8,6 +8,7 @@
     - azecko
     - kedrox
     - thegoldenkiwi2
+    - a-zurcher
 
 - name: Install Docker
   apt:
