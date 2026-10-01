@@ -55,7 +55,8 @@
         `boxes` int NOT NULL DEFAULT 0,
         `price_unit` float NOT NULL DEFAULT 0,
         `price_total` float NOT NULL DEFAULT 0,
-        `created_on` date NOT NULL DEFAULT (CURRENT_DATE)
+        `created_on` date NOT NULL DEFAULT (CURRENT_DATE),
+        `order_number` varchar(30)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 - name: Create `scans` table if not exists
