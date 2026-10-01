@@ -9,6 +9,7 @@
     - kedrox
     - thegoldenkiwi2
     - a-zurcher
+    - alexis1476
 
 - name: Install Docker
   apt:
