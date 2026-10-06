@@ -225,7 +225,8 @@
       `delivery_date` datetime NOT NULL,
       `exam_date` datetime NOT NULL,
       `contact` varchar(256) NOT NULL,
-      `exam_code` varchar(24) NOT NULL
+      `exam_code` varchar(24) NOT NULL,
+      `changes` JSON NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 - name: Check `crep_log` primary key
@@ -325,7 +326,91 @@
     login_db: "{{ keybase_secrets.mysql.database }}"
     login_user: "{{ keybase_secrets.mysql.user }}"
     login_password: "{{ keybase_secrets.mysql.password }}"
-    query: CREATE TRIGGER `crep_after_update` AFTER UPDATE ON `crep` FOR EACH ROW INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code) VALUES ('update', NOW(), NEW.id, NEW.exam_name, NEW.print_date, NEW.exam_date, NEW.contact, NEW.exam_code);
+    query: |
+      CREATE TRIGGER crep_after_update AFTER UPDATE ON crep FOR EACH ROW
+      BEGIN
+      DECLARE c JSON DEFAULT JSON_OBJECT();
+
+      IF NOT (OLD.exam_name <=> NEW.exam_name) THEN
+          SET c = JSON_SET(c, '$.exam_name', JSON_OBJECT('old', OLD.exam_name, 'new', NEW.exam_name));
+      END IF;
+      IF NOT (OLD.exam_code <=> NEW.exam_code) THEN
+          SET c = JSON_SET(c, '$.exam_code', JSON_OBJECT('old', OLD.exam_code, 'new', NEW.exam_code));
+      END IF;
+      IF NOT (OLD.exam_pages <=> NEW.exam_pages) THEN
+          SET c = JSON_SET(c, '$.exam_pages', JSON_OBJECT('old', OLD.exam_pages, 'new', NEW.exam_pages));
+      END IF;
+      IF NOT (OLD.exam_students <=> NEW.exam_students) THEN
+          SET c = JSON_SET(c, '$.exam_students', JSON_OBJECT('old', OLD.exam_students, 'new', NEW.exam_students));
+      END IF;
+      IF NOT (OLD.status <=> NEW.status) THEN
+          SET c = JSON_SET(c, '$.status', JSON_OBJECT('old', OLD.status, 'new', NEW.status));
+      END IF;
+      IF NOT (OLD.print_date <=> NEW.print_date) THEN
+          SET c = JSON_SET(c, '$.print_date', JSON_OBJECT('old', OLD.print_date, 'new', NEW.print_date));
+      END IF;
+      IF NOT (OLD.exam_date <=> NEW.exam_date) THEN
+          SET c = JSON_SET(c, '$.exam_date', JSON_OBJECT('old', OLD.exam_date, 'new', NEW.exam_date));
+      END IF;
+      IF NOT (OLD.desired_date <=> NEW.desired_date) THEN
+          SET c = JSON_SET(c, '$.desired_date', JSON_OBJECT('old', OLD.desired_date, 'new', NEW.desired_date));
+      END IF;
+      IF NOT (OLD.paper_format <=> NEW.paper_format) THEN
+          SET c = JSON_SET(c, '$.paper_format', JSON_OBJECT('old', OLD.paper_format, 'new', NEW.paper_format));
+      END IF;
+      IF NOT (OLD.paper_color <=> NEW.paper_color) THEN
+          SET c = JSON_SET(c, '$.paper_color', JSON_OBJECT('old', OLD.paper_color, 'new', NEW.paper_color));
+      END IF;
+      IF NOT (OLD.print <=> NEW.print) THEN
+          SET c = JSON_SET(c, '$.print', JSON_OBJECT('old', OLD.print, 'new', NEW.print));
+      END IF;
+      IF NOT (OLD.need_scan <=> NEW.need_scan) THEN
+          SET c = JSON_SET(c, '$.need_scan', JSON_OBJECT('old', OLD.need_scan, 'new', NEW.need_scan));
+      END IF;
+      IF NOT (OLD.financial_center <=> NEW.financial_center) THEN
+          SET c = JSON_SET(c, '$.financial_center', JSON_OBJECT('old', OLD.financial_center, 'new', NEW.financial_center));
+      END IF;
+      IF NOT (OLD.registered_by <=> NEW.registered_by) THEN
+          SET c = JSON_SET(c, '$.registered_by', JSON_OBJECT('old', OLD.registered_by, 'new', NEW.registered_by));
+      END IF;
+      IF NOT (OLD.boxes <=> NEW.boxes) THEN
+          SET c = JSON_SET(c, '$.boxes', JSON_OBJECT('old', OLD.boxes, 'new', NEW.boxes));
+      END IF;
+      IF NOT (OLD.price_unit <=> NEW.price_unit) THEN
+          SET c = JSON_SET(c, '$.price_unit', JSON_OBJECT('old', OLD.price_unit, 'new', NEW.price_unit));
+      END IF;
+      IF NOT (OLD.price_total <=> NEW.price_total) THEN
+          SET c = JSON_SET(c, '$.price_total', JSON_OBJECT('old', OLD.price_total, 'new', NEW.price_total));
+      END IF;
+      IF NOT (OLD.order_number <=> NEW.order_number) THEN
+          SET c = JSON_SET(c, '$.order_number', JSON_OBJECT('old', OLD.order_number, 'new', NEW.order_number));
+      END IF;
+      IF NOT (OLD.created_on <=> NEW.created_on) THEN
+          SET c = JSON_SET(c, '$.created_on', JSON_OBJECT('old', OLD.created_on, 'new', NEW.created_on));
+      END IF;
+
+      // Big things modified: We only log that they changed.
+      IF NOT (OLD.remark <=> NEW.remark) THEN
+          SET c = JSON_SET(c, '$.remark', TRUE);
+      END IF;
+      IF NOT (OLD.repro_remark <=> NEW.repro_remark) THEN
+          SET c = JSON_SET(c, '$.repro_remark', TRUE);
+      END IF;
+      IF NOT (OLD.contact <=> NEW.contact) THEN
+          SET c = JSON_SET(c, '$.contact', TRUE);
+      END IF;
+      IF NOT (OLD.authorized_persons <=> NEW.authorized_persons) THEN
+          SET c = JSON_SET(c, '$.authorized_persons', TRUE);
+      END IF;
+      IF NOT (OLD.files <=> NEW.files) THEN
+          SET c = JSON_SET(c, '$.files', TRUE);
+      END IF;
+
+      IF JSON_LENGTH(c) > 0 THEN
+          INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code, changes)
+          VALUES ('update', NOW(), NEW.id, NEW.exam_name, NEW.print_date, NEW.exam_date, NEW.contact, NEW.exam_code, c);
+      END IF;
+      END;
   when: crep_after_update.query_result[0][0].cnt | int == 0
   
 - name: Check trigger `crep_after_delete`
