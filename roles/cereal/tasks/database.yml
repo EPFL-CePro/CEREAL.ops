@@ -35,23 +35,17 @@
         `id` int NOT NULL,
         `exam_name` varchar(256) NOT NULL,
         `exam_code` varchar(24) NOT NULL,
-        `exam_pages` int NOT NULL,
-        `exam_students` int NOT NULL,
         `status` varchar(32) NOT NULL DEFAULT 'registered',
         `print_date` datetime NOT NULL,
+        `print_duration` int NOT NULL DEFAULT 0,
         `remark` mediumtext,
         `repro_remark` mediumtext,
         `exam_date` date NOT NULL,
-        `paper_format` varchar(2) NOT NULL,
-        `paper_color` varchar(10) NOT NULL,
         `contact` MEDIUMTEXT NOT NULL,
         `authorized_persons` MEDIUMTEXT NOT NULL,
         `registered_by` varchar(256) NOT NULL,
-        `need_scan` BOOLEAN NOT NULL,
         `financial_center` varchar(10) NOT NULL,
-        `files` MEDIUMTEXT NOT NULL,
         `desired_date` date NOT NULL,
-        `print` varchar(16) NOT NULL DEFAULT 'recto-verso',
         `boxes` int NOT NULL DEFAULT 0,
         `price_unit` float NOT NULL DEFAULT 0,
         `price_total` float NOT NULL DEFAULT 0,
@@ -210,6 +204,25 @@
     query: ALTER TABLE `crep` MODIFY `id` int NOT NULL AUTO_INCREMENT;
   ignore_errors: true
 
+- name: Create `crep_file` table if not exists
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: CREATE TABLE IF NOT EXISTS `crep_file` (
+        `id` int NOT NULL AUTO_INCREMENT,
+        `crep_id` int NOT NULL,
+        `file_name` varchar(255) NULL,
+        `exam_pages` int NOT NULL,
+        `exam_students` int NOT NULL,
+        `paper_format` varchar(2) NOT NULL,
+        `paper_color` varchar(10) NOT NULL,
+        `print` varchar(16) NOT NULL DEFAULT 'recto-verso',
+        `need_scan` tinyint(1) NOT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uq_crep_file_name` (`crep_id`, `file_name`),
+        CONSTRAINT `fk_crep_file_crep` FOREIGN KEY (`crep_id`) REFERENCES `crep` (`id`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 - name: Create `crep_log` table if not exists
   community.mysql.mysql_query:
@@ -337,35 +350,20 @@
       IF NOT (OLD.exam_code <=> NEW.exam_code) THEN
           SET c = JSON_SET(c, '$.exam_code', JSON_OBJECT('old', OLD.exam_code, 'new', NEW.exam_code));
       END IF;
-      IF NOT (OLD.exam_pages <=> NEW.exam_pages) THEN
-          SET c = JSON_SET(c, '$.exam_pages', JSON_OBJECT('old', OLD.exam_pages, 'new', NEW.exam_pages));
-      END IF;
-      IF NOT (OLD.exam_students <=> NEW.exam_students) THEN
-          SET c = JSON_SET(c, '$.exam_students', JSON_OBJECT('old', OLD.exam_students, 'new', NEW.exam_students));
-      END IF;
       IF NOT (OLD.status <=> NEW.status) THEN
           SET c = JSON_SET(c, '$.status', JSON_OBJECT('old', OLD.status, 'new', NEW.status));
       END IF;
       IF NOT (OLD.print_date <=> NEW.print_date) THEN
           SET c = JSON_SET(c, '$.print_date', JSON_OBJECT('old', OLD.print_date, 'new', NEW.print_date));
       END IF;
+      IF NOT (OLD.print_duration <=> NEW.print_duration) THEN
+          SET c = JSON_SET(c, '$.print_duration', JSON_OBJECT('old', OLD.print_duration, 'new', NEW.print_duration));
+      END IF;
       IF NOT (OLD.exam_date <=> NEW.exam_date) THEN
           SET c = JSON_SET(c, '$.exam_date', JSON_OBJECT('old', OLD.exam_date, 'new', NEW.exam_date));
       END IF;
       IF NOT (OLD.desired_date <=> NEW.desired_date) THEN
           SET c = JSON_SET(c, '$.desired_date', JSON_OBJECT('old', OLD.desired_date, 'new', NEW.desired_date));
-      END IF;
-      IF NOT (OLD.paper_format <=> NEW.paper_format) THEN
-          SET c = JSON_SET(c, '$.paper_format', JSON_OBJECT('old', OLD.paper_format, 'new', NEW.paper_format));
-      END IF;
-      IF NOT (OLD.paper_color <=> NEW.paper_color) THEN
-          SET c = JSON_SET(c, '$.paper_color', JSON_OBJECT('old', OLD.paper_color, 'new', NEW.paper_color));
-      END IF;
-      IF NOT (OLD.print <=> NEW.print) THEN
-          SET c = JSON_SET(c, '$.print', JSON_OBJECT('old', OLD.print, 'new', NEW.print));
-      END IF;
-      IF NOT (OLD.need_scan <=> NEW.need_scan) THEN
-          SET c = JSON_SET(c, '$.need_scan', JSON_OBJECT('old', OLD.need_scan, 'new', NEW.need_scan));
       END IF;
       IF NOT (OLD.financial_center <=> NEW.financial_center) THEN
           SET c = JSON_SET(c, '$.financial_center', JSON_OBJECT('old', OLD.financial_center, 'new', NEW.financial_center));
@@ -389,7 +387,7 @@
           SET c = JSON_SET(c, '$.created_on', JSON_OBJECT('old', OLD.created_on, 'new', NEW.created_on));
       END IF;
 
-      // Big things modified: We only log that they changed.
+      -- Big things modified: We only log that they changed.
       IF NOT (OLD.remark <=> NEW.remark) THEN
           SET c = JSON_SET(c, '$.remark', TRUE);
       END IF;
@@ -402,9 +400,6 @@
       IF NOT (OLD.authorized_persons <=> NEW.authorized_persons) THEN
           SET c = JSON_SET(c, '$.authorized_persons', TRUE);
       END IF;
-      IF NOT (OLD.files <=> NEW.files) THEN
-          SET c = JSON_SET(c, '$.files', TRUE);
-      END IF;
 
       IF JSON_LENGTH(c) > 0 THEN
           INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code, changes)
@@ -413,6 +408,103 @@
       END;
   when: crep_after_update.query_result[0][0].cnt | int == 0
   
+- name: Check trigger `crep_file_after_insert`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TRIGGER_NAME = 'crep_file_after_insert';
+  register: crep_file_after_insert
+
+- name: Create trigger `crep_file_after_insert` AFTER INSERT ON `crep_file`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: |
+      CREATE TRIGGER crep_file_after_insert AFTER INSERT ON crep_file FOR EACH ROW
+      BEGIN
+      IF COALESCE(@crep_registering, 0) = 0 THEN
+          INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code, changes)
+          SELECT 'update', NOW(), c.id, c.exam_name, c.print_date, c.exam_date, c.contact, c.exam_code,
+                 JSON_OBJECT('file', JSON_OBJECT('old', NULL, 'new', COALESCE(NEW.file_name, '(no file)')))
+          FROM crep c WHERE c.id = NEW.crep_id;
+      END IF;
+      END;
+  when: crep_file_after_insert.query_result[0][0].cnt | int == 0
+
+- name: Check trigger `crep_file_after_update`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TRIGGER_NAME = 'crep_file_after_update';
+  register: crep_file_after_update
+
+- name: Create trigger `crep_file_after_update` AFTER UPDATE ON `crep_file`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: |
+      CREATE TRIGGER crep_file_after_update AFTER UPDATE ON crep_file FOR EACH ROW
+      BEGIN
+      DECLARE c JSON DEFAULT JSON_OBJECT();
+      DECLARE prefix VARCHAR(270) DEFAULT CONCAT(COALESCE(NEW.file_name, '(no file)'), ' · ');
+
+      IF NOT (OLD.file_name <=> NEW.file_name) THEN
+          SET c = JSON_MERGE_PATCH(c, JSON_OBJECT('file', JSON_OBJECT('old', OLD.file_name, 'new', NEW.file_name)));
+      END IF;
+      IF NOT (OLD.exam_students <=> NEW.exam_students) THEN
+          SET c = JSON_MERGE_PATCH(c, JSON_OBJECT(CONCAT(prefix, 'exam_students'), JSON_OBJECT('old', OLD.exam_students, 'new', NEW.exam_students)));
+      END IF;
+      IF NOT (OLD.exam_pages <=> NEW.exam_pages) THEN
+          SET c = JSON_MERGE_PATCH(c, JSON_OBJECT(CONCAT(prefix, 'exam_pages'), JSON_OBJECT('old', OLD.exam_pages, 'new', NEW.exam_pages)));
+      END IF;
+      IF NOT (OLD.paper_format <=> NEW.paper_format) THEN
+          SET c = JSON_MERGE_PATCH(c, JSON_OBJECT(CONCAT(prefix, 'paper_format'), JSON_OBJECT('old', OLD.paper_format, 'new', NEW.paper_format)));
+      END IF;
+      IF NOT (OLD.paper_color <=> NEW.paper_color) THEN
+          SET c = JSON_MERGE_PATCH(c, JSON_OBJECT(CONCAT(prefix, 'paper_color'), JSON_OBJECT('old', OLD.paper_color, 'new', NEW.paper_color)));
+      END IF;
+      IF NOT (OLD.print <=> NEW.print) THEN
+          SET c = JSON_MERGE_PATCH(c, JSON_OBJECT(CONCAT(prefix, 'print'), JSON_OBJECT('old', OLD.print, 'new', NEW.print)));
+      END IF;
+      IF NOT (OLD.need_scan <=> NEW.need_scan) THEN
+          SET c = JSON_MERGE_PATCH(c, JSON_OBJECT(CONCAT(prefix, 'need_scan'), JSON_OBJECT('old', OLD.need_scan, 'new', NEW.need_scan)));
+      END IF;
+
+      IF JSON_LENGTH(c) > 0 THEN
+          INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code, changes)
+          SELECT 'update', NOW(), cr.id, cr.exam_name, cr.print_date, cr.exam_date, cr.contact, cr.exam_code, c
+          FROM crep cr WHERE cr.id = NEW.crep_id;
+      END IF;
+      END;
+  when: crep_file_after_update.query_result[0][0].cnt | int == 0
+
+- name: Check trigger `crep_file_after_delete`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TRIGGER_NAME = 'crep_file_after_delete';
+  register: crep_file_after_delete
+
+- name: Create trigger `crep_file_after_delete` AFTER DELETE ON `crep_file`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: |
+      CREATE TRIGGER crep_file_after_delete AFTER DELETE ON crep_file FOR EACH ROW
+      BEGIN
+      INSERT INTO crep_log (action, date_time, crep_id, exam_name, delivery_date, exam_date, contact, exam_code, changes)
+      SELECT 'update', NOW(), c.id, c.exam_name, c.print_date, c.exam_date, c.contact, c.exam_code,
+             JSON_OBJECT('file', JSON_OBJECT('old', COALESCE(OLD.file_name, '(no file)'), 'new', NULL))
+      FROM crep c WHERE c.id = OLD.crep_id;
+      END;
+  when: crep_file_after_delete.query_result[0][0].cnt | int == 0
+
 - name: Check trigger `crep_after_delete`
   community.mysql.mysql_query:
     login_db: "{{ keybase_secrets.mysql.database }}"
