@@ -23,6 +23,11 @@
     path: "/mnt/EXAM-DIFF"
     state: directory
 
+- name: "Ensure NAS-EXAMS-ARCHIVES mounting directory exists"
+  file: 
+    path: "/mnt/NAS-EXAMS-ARCHIVES"
+    state: directory
+
 # Mounting SMB to /mnt/CREP_PRINTING, also putting this configuration into /etc/fstab so that it automatically mounts on restart.
 - name: "Mount CREP_PRINTING SMB share"
   ansible.posix.mount:
@@ -46,6 +51,15 @@
   ansible.posix.mount:
     path: /mnt/SCAN_EXAMS
     src: "//vpsi1files.epfl.ch/CAPE/SCAN_EXAMS"
+    fstype: cifs
+    opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
+    state: mounted
+
+# Mounting SMB to /mnt/NAS-EXAMS-ARCHIVES, also putting this configuration into /etc/fstab so that it automatically mounts on restart.
+- name: "Mount NAS-EXAMS-ARCHIVES SMB share"
+  ansible.posix.mount:
+    path: /mnt/NAS-EXAMS-ARCHIVES
+    src: "//ent1arch.epfl.ch/avp-e-cepro-003/"
     fstype: cifs
     opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
     state: mounted
@@ -87,3 +101,4 @@
     volumes:
       - /mnt/CREP_PRINTING:/mnt/CREP_PRINTING:rw
       - /mnt/EXAM-DIFF/:/mnt/EXAM-DIFF:rw
+      - /mnt/NAS-EXAMS-ARCHIVES/:/mnt/NAS-EXAMS-ARCHIVES:rw
