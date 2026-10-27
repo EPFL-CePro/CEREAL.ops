@@ -310,6 +310,59 @@
     query: ALTER TABLE `user_notification` ADD CONSTRAINT `fk_un_log` FOREIGN KEY (`log_id`) REFERENCES `crep_log` (`id`) ON DELETE CASCADE;
   when: user_notification_fk.query_result[0][0].cnt | int == 0
 
+- name: Create `comments` table if not exists
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: CREATE TABLE IF NOT EXISTS `comments` (
+        `id` int NOT NULL,
+        `exam_id` int NOT NULL,
+        `content` MEDIUMTEXT,
+        `registered_by` JSON NOT NULL,
+        `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+- name: Check `comments` primary key
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TABLE_NAME = 'comments' AND CONSTRAINT_TYPE = 'PRIMARY KEY';
+  register: comments_pk
+
+- name: Alter table `comments` add primary key
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: ALTER TABLE `comments` ADD PRIMARY KEY (`id`), ADD KEY `fk_exam_idx` (`exam_id`);
+  when: comments_pk.query_result[0][0].cnt | int == 0
+
+- name: Alter table `comments` modify not null auto increment
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: ALTER TABLE `comments` MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  ignore_errors: true
+
+- name: Check `comments` foreign key `comments_ibfk_1`
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(*) AS cnt FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = '{{ keybase_secrets.mysql.database }}' AND TABLE_NAME = 'comments' AND CONSTRAINT_NAME = 'comments_ibfk_1';
+  register: comments_fk
+
+- name: Alter table `comments` add foreign key
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: ALTER TABLE `comments` ADD CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`);
+  when: comments_fk.query_result[0][0].cnt | int == 0
+
 - name: Check trigger `crep_after_insert`
   community.mysql.mysql_query:
     login_db: "{{ keybase_secrets.mysql.database }}"
