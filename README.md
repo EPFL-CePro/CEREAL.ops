@@ -9,7 +9,7 @@ It uses [Ansible] wrapped in a [suitcase] called [`cerealsible`](./cerealsible).
 
 ## How it works
 `./cerealsible`
-- Install some dependencies on the VM (Docker, Node, NPM, ...)
+- Install some dependencies on the VM (Docker, Node, pnpm, ...)
 - Setup the database on the running MySQL server
 - Clone the git repository, copy the env variables from Keybase, build the Docker image and run CEREAL's container
 - Configurate Apache
