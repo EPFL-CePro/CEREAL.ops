@@ -135,16 +135,6 @@
     build:
       path: /data/cereal
 
-# The Prisma migrations run from the `migrate` stage of the Dockerfile, based on Debian: Prisma's schema engine does not run on the Alpine image of the app.
-- name: Build CEREAL migrations image
-  community.docker.docker_image:
-    name: cereal-migrate
-    source: build
-    force_source: yes
-    build:
-      path: /data/cereal
-      target: migrate
-
 - name: Check whether the database predates Prisma
   community.mysql.mysql_query:
     login_db: "{{ keybase_secrets.mysql.database }}"
@@ -158,8 +148,8 @@
 - name: Mark the Prisma baseline migration `0_init` as applied
   ansible.builtin.docker_container:
     name: cereal-migrate
-    image: cereal-migrate
-    command: pnpm prisma migrate resolve --applied 0_init
+    image: cereal
+    command: node_modules/.bin/prisma migrate resolve --applied 0_init
     detach: false
     cleanup: true
     networks:
@@ -169,11 +159,13 @@
     prisma_baseline.query_result[0][0].prisma | int == 0
     and prisma_baseline.query_result[0][0].existing | int == 1
 
+# The migrations run from the app image, which contains the Prisma CLI and the migrations.
 # Fails the deployment before the app is restarted if a migration fails
 - name: Apply Prisma migrations
   ansible.builtin.docker_container:
     name: cereal-migrate
-    image: cereal-migrate
+    image: cereal
+    command: node_modules/.bin/prisma migrate deploy
     detach: false
     cleanup: true
     networks:
