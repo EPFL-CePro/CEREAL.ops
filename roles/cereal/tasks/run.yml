@@ -71,14 +71,15 @@
 - name: Create MySQL Docker container
   ansible.builtin.docker_container:
     name: cereal-app-db
-    image: mysql
+    image: "{{ cereal_mysql_image }}"
+    command: --log-bin-trust-function-creators=1
     state: started
     restart_policy: unless-stopped
     env_file: /data/cereal/.env
     published_ports:
       - "127.0.0.1:3306:3306"
     volumes:
-      - "./db:/docker-entrypoint-initdb.d"
+      - "{{ cereal_mysql_volume }}:/var/lib/mysql"
     networks:
       - name: cereal-network
     healthcheck:
@@ -114,30 +115,6 @@
   community.docker.docker_image:
     name: "{{ _cereal_image }}"
     source: pull
-
-- name: Check whether the database predates Prisma
-  community.mysql.mysql_query:
-    login_db: "{{ keybase_secrets.mysql.database }}"
-    login_user: "{{ keybase_secrets.mysql.user }}"
-    login_password: "{{ keybase_secrets.mysql.password }}"
-    query: SELECT COUNT(CASE WHEN TABLE_NAME = '_prisma_migrations' THEN 1 END) AS prisma, COUNT(CASE WHEN TABLE_NAME = 'crep' THEN 1 END) AS existing FROM information_schema.TABLES WHERE TABLE_SCHEMA = '{{ keybase_secrets.mysql.database }}';
-  register: prisma_baseline
-
-# A database created before Prisma already has the tables of the `0_init` baseline migration: it must be marked as applied, never run.
-# An empty database (new server) is not baselined: `migrate deploy` runs `0_init` like any other migration.
-- name: Mark the Prisma baseline migration `0_init` as applied
-  ansible.builtin.docker_container:
-    name: cereal-migrate
-    image: "{{ _cereal_image }}"
-    command: node_modules/.bin/prisma migrate resolve --applied 0_init
-    detach: false
-    cleanup: true
-    networks:
-      - name: cereal-network
-    env_file: /data/cereal/.env
-  when: >-
-    prisma_baseline.query_result[0][0].prisma | int == 0
-    and prisma_baseline.query_result[0][0].existing | int == 1
 
 # The migrations run from the app image, which contains the Prisma CLI and the migrations.
 # Fails the deployment before the app is restarted if a migration fails

@@ -4,5 +4,9 @@ _keybase_secrets:
 
 keybase_secrets: "{{ _keybase_secrets.get(inventory_environment, None) }}"
 
+# Must match the MySQL version currently running: MySQL cannot downgrade a data directory.
+cereal_mysql_image: "mysql:9.6.0"
+cereal_mysql_volume: cereal_mysql_volume
+
 cereal_host_subdomain: "{{ 'cereal.epfl.ch' if 'prod' in inventory_file else 'cereal-test.epfl.ch' }}"
 crep_redirect_host_subdomain: "{{ 'crep.epfl.ch' if 'prod' in inventory_file else 'crep-test.epfl.ch' }}"
