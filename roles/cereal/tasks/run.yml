@@ -64,33 +64,6 @@
     opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
     state: mounted
 
-# scans_monitor.js runs on the host, so its dependencies must be installed there.
-# A node_modules without pnpm's `.modules.yaml` was installed by npm and must be removed first, pnpm cannot purge it without a TTY.
-- name: Check whether node_modules was installed by pnpm
-  stat:
-    path: /data/cereal/node_modules/.modules.yaml
-  register: _pnpm_modules_marker
-
-- name: Remove node_modules installed by npm
-  file:
-    path: /data/cereal/node_modules
-    state: absent
-  when: not _pnpm_modules_marker.stat.exists
-
-- name: Install scans monitor dependencies with pnpm
-  ansible.builtin.command:
-    cmd: pnpm install --prod --frozen-lockfile
-    chdir: /data/cereal
-  register: _pnpm_install
-  changed_when: _pnpm_install.stdout is search('^[+-] ', multiline=True)
-
-- name: "Launch scans monitor crontab script"
-  ansible.builtin.cron:
-    name: "configurate scans folder monitor crontab"
-    minute: "*/5"
-    job: "node /data/cereal/scans_monitor.js"
-  when: inventory_environment == 'prod'
-
 - name: Create Docker network
   ansible.builtin.docker_network:
     name: cereal-network
@@ -198,3 +171,14 @@
       - /mnt/CREP_PRINTING:/mnt/CREP_PRINTING:rw
       - /mnt/EXAM-DIFF/:/mnt/EXAM-DIFF:rw
       - /mnt/NAS-EXAMS-ARCHIVES/:/mnt/NAS-EXAMS-ARCHIVES:rw
+      # Read by scans_monitor.js
+      - /mnt/SCAN_EXAMS/:/mnt/SCAN_EXAMS:ro
+
+# After the container is (re)created, so that the cron never calls an image without scans_monitor.js.
+# Only in prod, and removed from the other environments if it was ever set there.
+- name: "Launch scans monitor crontab script"
+  ansible.builtin.cron:
+    name: "configurate scans folder monitor crontab"
+    minute: "*/5"
+    job: "docker exec cereal-app node scans_monitor.js"
+    state: "{{ 'present' if inventory_environment == 'prod' else 'absent' }}"

@@ -17,24 +17,6 @@
     state: latest
     update_cache: true
 
-- name: Install NodeJS
-  apt:
-    name: nodejs
-    state: latest
-    update_cache: true
-
-- name: Install NPM
-  apt:
-    name: npm
-    state: latest
-    update_cache: true
-
-- name: Install pnpm
-  community.general.npm:
-    name: pnpm
-    state: present
-    global: true
-
 - name: Install Docker Compose
   apt:
     name: docker-compose-v2
