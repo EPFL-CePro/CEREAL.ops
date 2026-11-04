@@ -9,7 +9,7 @@ It uses [Ansible] wrapped in a [suitcase] called [`cerealsible`](./cerealsible).
 
 ## How it works
 `./cerealsible`
-- Install some dependencies on the VM (Docker, Node, pnpm, ...)
+- Install some dependencies on the VM (Docker, Git, cifs-utils, ...)
 - Clone the git repository, copy the env variables from Keybase, start the MySQL container, build the Docker image, apply the Prisma migrations and run CEREAL's container
 - Setup the daily database backup
 - Configurate Apache
