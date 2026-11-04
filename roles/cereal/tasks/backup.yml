@@ -1,0 +1,29 @@
+- name: Ensure /data/cereal-backups directory exists
+  file:
+    path: /data/cereal-backups
+    state: directory
+
+- name: Ensure /etc/samba directory exists
+  file:
+    path: "/etc/samba/"
+    state: directory
+
+- name: "Copy cifs credentials from keybase ({{ inventory_mode }})"
+  copy:
+    src: "/keybase/team/cepro_cereal/cifs_creds"
+    dest: /etc/samba/creds_cereal_printing
+
+- name: Mount NAS-backup SMB share
+  ansible.posix.mount:
+    path: /data/cereal-backups
+    src: "{{ '//vpsi1files.epfl.ch/CEPRO/BACKUP/CEREAL_TEST' if inventory_environment == 'test' else '//vpsi1files.epfl.ch/CEPRO/BACKUP/CEREAL' }}"
+    fstype: cifs
+    opts: credentials=/etc/samba/creds_cereal_printing,iocharset=utf8,vers=3.0,_netdev
+    state: mounted
+
+- name: "Launch backup crontab script"
+  ansible.builtin.cron:
+    name: "configurate mysql backup crontab"
+    minute: "0"
+    hour: "0"
+    job: "/data/cereal/database_backup.sh >> /var/log/mysql_backup.log 2>&1"

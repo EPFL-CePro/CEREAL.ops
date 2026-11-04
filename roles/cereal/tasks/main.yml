@@ -13,17 +13,17 @@
   tags: always
 
 - include_tasks:
-    file: database.yml
-    apply:
-      tags:
-        - cereal.database
-  tags: always
-
-- include_tasks:
     file: run.yml
     apply:
       tags:
         - cereal.run
+  tags: always
+
+- include_tasks:
+    file: backup.yml
+    apply:
+      tags:
+        - cereal.backup
   tags: always
 
 - include_tasks:

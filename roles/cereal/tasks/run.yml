@@ -95,6 +95,38 @@
   ansible.builtin.docker_network:
     name: cereal-network
 
+- name: Create MySQL Docker container
+  ansible.builtin.docker_container:
+    name: cereal-app-db
+    image: mysql
+    state: started
+    restart_policy: unless-stopped
+    env_file: /data/cereal/.env
+    published_ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - "./db:/docker-entrypoint-initdb.d"
+    networks:
+      - name: cereal-network
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -h
+        - localhost
+      timeout: 5s
+      retries: 10
+
+# A new MySQL container takes a few seconds to initialize, the migrations below need it to be ready
+- name: Wait for MySQL to be healthy
+  community.docker.docker_container_info:
+    name: cereal-app-db
+  register: _mysql_container
+  until: _mysql_container.container.State.Health.Status == 'healthy'
+  retries: 30
+  delay: 2
+
 - name: Build CEREAL image
   community.docker.docker_image:
     name: cereal
@@ -102,6 +134,51 @@
     force_source: yes
     build:
       path: /data/cereal
+
+# The Prisma migrations run from the `migrate` stage of the Dockerfile, based on Debian: Prisma's schema engine does not run on the Alpine image of the app.
+- name: Build CEREAL migrations image
+  community.docker.docker_image:
+    name: cereal-migrate
+    source: build
+    force_source: yes
+    build:
+      path: /data/cereal
+      target: migrate
+
+- name: Check whether the database predates Prisma
+  community.mysql.mysql_query:
+    login_db: "{{ keybase_secrets.mysql.database }}"
+    login_user: "{{ keybase_secrets.mysql.user }}"
+    login_password: "{{ keybase_secrets.mysql.password }}"
+    query: SELECT COUNT(CASE WHEN TABLE_NAME = '_prisma_migrations' THEN 1 END) AS prisma, COUNT(CASE WHEN TABLE_NAME = 'crep' THEN 1 END) AS existing FROM information_schema.TABLES WHERE TABLE_SCHEMA = '{{ keybase_secrets.mysql.database }}';
+  register: prisma_baseline
+
+# A database created before Prisma already has the tables of the `0_init` baseline migration: it must be marked as applied, never run.
+# An empty database (new server) is not baselined: `migrate deploy` runs `0_init` like any other migration.
+- name: Mark the Prisma baseline migration `0_init` as applied
+  ansible.builtin.docker_container:
+    name: cereal-migrate
+    image: cereal-migrate
+    command: pnpm prisma migrate resolve --applied 0_init
+    detach: false
+    cleanup: true
+    networks:
+      - name: cereal-network
+    env_file: /data/cereal/.env
+  when: >-
+    prisma_baseline.query_result[0][0].prisma | int == 0
+    and prisma_baseline.query_result[0][0].existing | int == 1
+
+# Fails the deployment before the app is restarted if a migration fails
+- name: Apply Prisma migrations
+  ansible.builtin.docker_container:
+    name: cereal-migrate
+    image: cereal-migrate
+    detach: false
+    cleanup: true
+    networks:
+      - name: cereal-network
+    env_file: /data/cereal/.env
 
 - name: Create Docker CEREAL
   ansible.builtin.docker_container:
