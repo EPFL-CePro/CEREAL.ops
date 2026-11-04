@@ -10,8 +10,8 @@ It uses [Ansible] wrapped in a [suitcase] called [`cerealsible`](./cerealsible).
 ## How it works
 `./cerealsible`
 - Install some dependencies on the VM (Docker, Node, pnpm, ...)
-- Setup the database on the running MySQL server
-- Clone the git repository, copy the env variables from Keybase, build the Docker image and run CEREAL's container
+- Clone the git repository, copy the env variables from Keybase, start the MySQL container, build the Docker image, apply the Prisma migrations and run CEREAL's container
+- Setup the daily database backup
 - Configurate Apache
 
 Use `./cerealsible --prod` to deploy on the production VM.
@@ -19,10 +19,10 @@ Use `./cerealsible --prod` to deploy on the production VM.
 ### Tags
 - `cereal.setup`
     - Install necessary dependencies on the VM
-- `cereal.database`
-    - Setup the database on the running MySQL server
 - `cereal.run`
-    - Clone the git repository, and do the necessary to start the project (docker image & container) : This is mostly what you want to do if you just made some changes to the project that you want to push in production.
+    - Clone the git repository, and do the necessary to start the project (MySQL container, docker image, Prisma migrations & container) : This is mostly what you want to do if you just made some changes to the project that you want to push in production.
+- `cereal.backup`
+    - Mount the backup share and setup the daily database backup crontab
 - `cereal.apache`
     - Configurate Apache & certificates (certificate are on the Keybase)
 
