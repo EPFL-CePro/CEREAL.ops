@@ -1,0 +1,42 @@
+# Minimal configuration for the official `httpd` image, replacing its default httpd.conf (passed with `-f`).
+# Apache is only used as a TLS-terminating reverse proxy in front of CEREAL.
+ServerRoot "/usr/local/apache2"
+ServerName {{ cereal_host_subdomain }}
+
+Listen 80
+Listen 443
+
+LoadModule mpm_event_module modules/mod_mpm_event.so
+LoadModule unixd_module modules/mod_unixd.so
+LoadModule authz_core_module modules/mod_authz_core.so
+LoadModule log_config_module modules/mod_log_config.so
+LoadModule headers_module modules/mod_headers.so
+LoadModule rewrite_module modules/mod_rewrite.so
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+LoadModule socache_shmcb_module modules/mod_socache_shmcb.so
+LoadModule ssl_module modules/mod_ssl.so
+
+User daemon
+Group daemon
+
+<Directory />
+    AllowOverride None
+    Require all denied
+</Directory>
+
+# Logs go to the container output: `docker logs cereal-apache`
+LogLevel warn
+ErrorLog /proc/self/fd/2
+LogFormat "%v %h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" vhost_combined
+CustomLog /proc/self/fd/1 vhost_combined
+
+ServerTokens Prod
+ServerSignature Off
+
+SSLRandomSeed startup builtin
+SSLRandomSeed connect builtin
+SSLSessionCache "shmcb:/usr/local/apache2/logs/ssl_scache(512000)"
+SSLSessionCacheTimeout 300
+
+Include conf/cereal/cereal.conf

@@ -12,7 +12,7 @@ It uses [Ansible] wrapped in a [suitcase] called [`cerealsible`](./cerealsible).
 - Install some dependencies on the VM (Docker, Git, cifs-utils, ...)
 - Clone the git repository, copy the env variables from Keybase, start the MySQL container, build the Docker image, apply the Prisma migrations and run CEREAL's container
 - Setup the daily database backup
-- Configurate Apache
+- Configurate and run Apache in a Docker container
 
 Use `./cerealsible --prod` to deploy on the production VM.
 
@@ -24,7 +24,7 @@ Use `./cerealsible --prod` to deploy on the production VM.
 - `cereal.backup`
     - Mount the backup share and setup the daily database backup crontab
 - `cereal.apache`
-    - Configurate Apache & certificates (certificate are on the Keybase)
+    - Configurate Apache & certificates (certificate are on the Keybase) in `/data/apache/`, validate the configuration and run the `cereal-apache` container. Logs are available with `docker logs cereal-apache`
 
 To use a tag : `./cerealsible -t cereal.setup` or `./cerealsible --prod -t cereal.setup`
 
