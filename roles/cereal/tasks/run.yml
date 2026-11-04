@@ -127,13 +127,20 @@
   retries: 30
   delay: 2
 
-- name: Build CEREAL image
+# The CEREAL image is built and published to GHCR by the CI of CEREAL, tagged with the version of `package.json`.
+- name: Read the CEREAL version
+  ansible.builtin.slurp:
+    src: /data/cereal/package.json
+  register: _cereal_package_json
+
+- name: Set the CEREAL image name
+  ansible.builtin.set_fact:
+    _cereal_image: "ghcr.io/epfl-cepro/cereal:{{ (_cereal_package_json.content | b64decode | from_json).version }}"
+
+- name: Pull CEREAL image from GHCR
   community.docker.docker_image:
-    name: cereal
-    source: build
-    force_source: yes
-    build:
-      path: /data/cereal
+    name: "{{ _cereal_image }}"
+    source: pull
 
 - name: Check whether the database predates Prisma
   community.mysql.mysql_query:
@@ -148,7 +155,7 @@
 - name: Mark the Prisma baseline migration `0_init` as applied
   ansible.builtin.docker_container:
     name: cereal-migrate
-    image: cereal
+    image: "{{ _cereal_image }}"
     command: node_modules/.bin/prisma migrate resolve --applied 0_init
     detach: false
     cleanup: true
@@ -164,7 +171,7 @@
 - name: Apply Prisma migrations
   ansible.builtin.docker_container:
     name: cereal-migrate
-    image: cereal
+    image: "{{ _cereal_image }}"
     command: node_modules/.bin/prisma migrate deploy
     detach: false
     cleanup: true
@@ -175,7 +182,7 @@
 - name: Create Docker CEREAL
   ansible.builtin.docker_container:
     name: cereal-app
-    image: cereal
+    image: "{{ _cereal_image }}"
     state: started
     ports:
       - "3000:3000"
