@@ -134,8 +134,9 @@
     name: cereal-app
     image: "{{ _cereal_image }}"
     state: started
-    ports:
-      - "3000:3000"
+    # Apache reaches it through cereal-network, only exposed locally for debugging
+    published_ports:
+      - "127.0.0.1:3000:3000"
     networks:
       - name: cereal-network
         aliases:

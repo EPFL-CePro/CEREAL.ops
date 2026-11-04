@@ -10,3 +10,8 @@ cereal_mysql_volume: cereal_mysql_volume
 
 cereal_host_subdomain: "{{ 'cereal.epfl.ch' if 'prod' in inventory_file else 'cereal-test.epfl.ch' }}"
 crep_redirect_host_subdomain: "{{ 'crep.epfl.ch' if 'prod' in inventory_file else 'crep-test.epfl.ch' }}"
+
+cereal_apache_image: "httpd:2.4.69"
+cereal_apache_volumes:
+  - /data/apache/conf:/usr/local/apache2/conf/cereal:ro
+  - /data/apache/certs:/usr/local/apache2/conf/certs:ro
