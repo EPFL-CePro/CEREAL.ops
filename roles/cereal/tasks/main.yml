@@ -32,3 +32,12 @@
       tags:
         - cereal.apache
   tags: always
+
+# After run.yml and apache.yml, which prepare what the containers mount
+- include_tasks:
+    file: compose.yml
+    apply:
+      tags:
+        - cereal.run
+        - cereal.apache
+  tags: always

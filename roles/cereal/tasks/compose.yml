@@ -1,0 +1,65 @@
+# Starts the CEREAL stack (MySQL, Prisma migrations, CEREAL, Apache) with compose.prod.yml of the CEREAL repository.
+# Runs after run.yml and apache.yml: the SMB shares, the .env and the Apache files must exist beforehand.
+
+# The CEREAL image is built and published to GHCR by the CI of CEREAL, tagged with the version of `package.json`.
+- name: Read the CEREAL version
+  ansible.builtin.slurp:
+    src: /data/cereal/package.json
+  register: _cereal_package_json
+
+- name: Set the Compose variables
+  ansible.builtin.set_fact:
+    _compose_env:
+      CEREAL_VERSION: "{{ (_cereal_package_json.content | b64decode | from_json).version }}"
+      CEREAL_ENV: "{{ inventory_environment }}"
+
+# Before anything is stopped, to keep the downtime short
+- name: Pull the images
+  community.docker.docker_compose_v2_pull:
+    project_src: /data/cereal
+    project_name: cereal
+    files:
+      - compose.prod.yml
+  environment: "{{ _compose_env }}"
+
+# Fails the deployment if the migrations or the Apache configuration test fail:
+# the app and Apache are only (re)created once they succeeded.
+- name: Start the CEREAL stack
+  community.docker.docker_compose_v2:
+    project_src: /data/cereal
+    project_name: cereal
+    files:
+      - compose.prod.yml
+    state: present
+    pull: missing
+    remove_orphans: true
+    wait: true
+    wait_timeout: 300
+  environment: "{{ _compose_env }}"
+
+# Compose does not see changes in the mounted files: recreate Apache (after its configuration test) when they changed.
+# Only defined when apache.yml ran (no tag, or `-t cereal.apache`).
+- name: Recreate Apache if its configuration or certificates changed
+  community.docker.docker_compose_v2:
+    project_src: /data/cereal
+    project_name: cereal
+    files:
+      - compose.prod.yml
+    state: present
+    services:
+      - cereal-apache
+    recreate: always
+    pull: missing
+    wait: true
+    wait_timeout: 300
+  environment: "{{ _compose_env }}"
+  when: (_apache_conf is defined and _apache_conf is changed) or (_apache_certs is defined and _apache_certs is changed)
+
+# After the container is (re)created, so that the cron never calls an image without scans_monitor.js.
+# Only in prod, and removed from the other environments if it was ever set there.
+- name: "Launch scans monitor crontab script"
+  ansible.builtin.cron:
+    name: "configurate scans folder monitor crontab"
+    minute: "*/5"
+    job: "docker exec cereal-app node scans_monitor.js"
+    state: "{{ 'present' if inventory_environment == 'prod' else 'absent' }}"
