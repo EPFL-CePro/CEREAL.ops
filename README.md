@@ -1,4 +1,8 @@
 # CEREAL.ops
+
+> [!IMPORTANT]
+> This has been moved to [gitlab.epfl.ch](https://gitlab.epfl.ch/cepro-it/CEREAL.ops).
+
 This repository regroups the configuration-as-code for the [CEREAL] project.
 It is used to deploy CEREAL in [production] or [test] version.
 It uses [Ansible] wrapped in a [suitcase] called [`cerealsible`](./cerealsible).
